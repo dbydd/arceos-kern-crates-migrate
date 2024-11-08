@@ -19,12 +19,19 @@ qemu_args-riscv64 := \
   -bios default \
   -kernel $(OUT_BIN)
 
+ifeq ($(PLATFORM_NAME), aarch64-raspi4)
 qemu_args-aarch64 := \
   -cpu cortex-a72 \
-  -machine virt \
+  -machine raspi4b2g \
   -kernel $(OUT_BIN)
-
-qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
+qemu_args-y := -m 2G -smp $(SMP) $(qemu_args-$(ARCH))
+else
+qemu_args-aarch64 := \
+  -cpu cortex-a72 \
+  -machine virt,highmem=off \
+  -kernel $(OUT_BIN)
+qemu_args-y := -m 2G -smp $(SMP) $(qemu_args-$(ARCH))
+endif
 
 qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
@@ -60,6 +67,14 @@ qemu_args-$(GRAPHIC) += \
 
 ifeq ($(GRAPHIC), n)
   qemu_args-y += -nographic
+endif
+
+ifeq ($(XHCI),y) 
+  qemu_args-$(XHCI) += -usb -device nec-usb-xhci,id=xhci #need test
+endif
+
+ifeq ($(QEMU_CONSOLE),y)
+  qemu_args-y += -monitor unix:/tmp/qemu-monitor-socket,server,nowait
 endif
 
 ifeq ($(QEMU_LOG), y)
